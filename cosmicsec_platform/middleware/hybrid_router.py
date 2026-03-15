@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import logging
 import os
 import time
 import uuid
@@ -37,9 +39,11 @@ class HybridRouter:
     ) -> None:
         self.service_urls = service_urls
         self.static_profiles = static_profiles or {}
+        self.logger = logging.getLogger(__name__)
         env_mode = os.getenv("PLATFORM_RUNTIME_MODE", RuntimeMode.HYBRID.value).lower()
         self.default_mode = RuntimeMode(env_mode) if env_mode in RuntimeMode._value2member_map_ else RuntimeMode.HYBRID
         self.trace_export_url = os.getenv("COSMICSEC_TRACE_EXPORT_URL", "").strip()
+        self.canary_dynamic_percent = self._sanitize_percent(os.getenv("COSMICSEC_DYNAMIC_CANARY_PERCENT", "0"))
         trace_buffer_size = int(os.getenv("COSMICSEC_TRACE_BUFFER_SIZE", "500"))
         self.trace_buffer: Deque[Dict[str, Any]] = deque(maxlen=max(10, trace_buffer_size))
         self.metrics = {
@@ -51,10 +55,47 @@ class HybridRouter:
         }
 
     def resolve_mode(self, request: Request) -> RuntimeMode:
+        mode, _ = self.resolve_mode_with_context(request)
+        return mode
+
+    def resolve_mode_with_context(self, request: Request) -> tuple[RuntimeMode, Dict[str, Any]]:
         header_mode = request.headers.get("X-Platform-Mode", "").strip().lower()
         if header_mode in RuntimeMode._value2member_map_:
-            return RuntimeMode(header_mode)
-        return self.default_mode
+            return RuntimeMode(header_mode), {
+                "source": "header",
+                "canary_applied": False,
+                "canary_bucket": None,
+                "dynamic_canary_percent": self.canary_dynamic_percent,
+            }
+
+        if self.default_mode == RuntimeMode.HYBRID and self.canary_dynamic_percent > 0:
+            canary_key = (
+                request.headers.get("X-Canary-Key")
+                or request.headers.get("X-Request-Id")
+                or (request.client.host if request.client else "")
+                or str(uuid.uuid4())
+            )
+            bucket = int(hashlib.sha256(canary_key.encode("utf-8")).hexdigest()[:8], 16) % 100
+            if bucket < self.canary_dynamic_percent:
+                return RuntimeMode.DYNAMIC, {
+                    "source": "canary",
+                    "canary_applied": True,
+                    "canary_bucket": bucket,
+                    "dynamic_canary_percent": self.canary_dynamic_percent,
+                }
+            return RuntimeMode.HYBRID, {
+                "source": "default",
+                "canary_applied": True,
+                "canary_bucket": bucket,
+                "dynamic_canary_percent": self.canary_dynamic_percent,
+            }
+
+        return self.default_mode, {
+            "source": "default",
+            "canary_applied": False,
+            "canary_bucket": None,
+            "dynamic_canary_percent": self.canary_dynamic_percent,
+        }
 
     async def execute(
         self,
@@ -71,7 +112,7 @@ class HybridRouter:
         route_key: Optional[str] = None,
     ) -> JSONResponse:
         decision_start = time.time()
-        mode = self.resolve_mode(request)
+        mode, mode_context = self.resolve_mode_with_context(request)
         policy = get_policy(route_key)
         trace_id = request.headers.get("X-Request-Id", str(uuid.uuid4()))
 
@@ -92,6 +133,10 @@ class HybridRouter:
             latency_ms = round((decision_ts - decision_start) * 1000, 2)
             body["_runtime"] = {
                 "mode": mode.value,
+                "mode_source": mode_context["source"],
+                "canary_applied": mode_context["canary_applied"],
+                "canary_bucket": mode_context["canary_bucket"],
+                "dynamic_canary_percent": mode_context["dynamic_canary_percent"],
                 "route": route,
                 "trace_id": trace_id,
                 "route_key": route_key,
@@ -110,6 +155,7 @@ class HybridRouter:
                 "trace_id": trace_id,
                 "route_key": route_key,
                 "mode": mode.value,
+                "mode_source": mode_context["source"],
                 "route": route,
                 "status_code": status_code,
                 "outcome": outcome,
@@ -119,6 +165,16 @@ class HybridRouter:
                 "ts": decision_ts,
             }
             self.trace_buffer.append(event)
+            if route in ("static", "static_fallback", "policy_denied"):
+                self.logger.warning(
+                    "Hybrid degraded decision route=%s route_key=%s mode=%s status=%s reason=%s trace_id=%s",
+                    route,
+                    route_key,
+                    mode.value,
+                    status_code,
+                    reason,
+                    trace_id,
+                )
             await self._export_trace(event)
             return JSONResponse(status_code=status_code, content=body)
 
@@ -225,3 +281,20 @@ class HybridRouter:
             "buffer_used": len(self.trace_buffer),
         }
 
+    def get_rollout_config(self) -> Dict[str, Any]:
+        return {
+            "default_mode": self.default_mode.value,
+            "dynamic_canary_percent": self.canary_dynamic_percent,
+        }
+
+    def set_rollout_config(self, dynamic_canary_percent: int) -> Dict[str, Any]:
+        self.canary_dynamic_percent = self._sanitize_percent(dynamic_canary_percent)
+        return self.get_rollout_config()
+
+    @staticmethod
+    def _sanitize_percent(value: Any) -> int:
+        try:
+            percent = int(value)
+        except (TypeError, ValueError):
+            return 0
+        return max(0, min(percent, 100))
