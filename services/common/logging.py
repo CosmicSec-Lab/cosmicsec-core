@@ -70,36 +70,41 @@ class StructuredLogger(logging.Logger):
         log_entry = json.dumps(context, default=str)
         super().log(level, log_entry)
 
-    def debug(self, message: str, **extra):
+    def debug(self, message: str, *args, **extra):
         """Log debug level with structured format."""
-        self._log_structured(logging.DEBUG, message, extra=extra)
+        self._log_structured(logging.DEBUG, message, args=args, extra=extra)
 
-    def info(self, message: str, **extra):
+    def info(self, message: str, *args, **extra):
         """Log info level with structured format."""
-        self._log_structured(logging.INFO, message, extra=extra)
+        self._log_structured(logging.INFO, message, args=args, extra=extra)
 
-    def warning(self, message: str, **extra):
+    def warning(self, message: str, *args, **extra):
         """Log warning level with structured format."""
-        self._log_structured(logging.WARNING, message, extra=extra)
+        self._log_structured(logging.WARNING, message, args=args, extra=extra)
 
-    def error(self, message: str, exc_info: bool = False, **extra):
+    def error(self, message: str, *args, exc_info: bool = False, **extra):
         """Log error level with structured format."""
         if exc_info:
             import sys
-            import traceback as tb
             exc_info_tuple = sys.exc_info()
         else:
             exc_info_tuple = None
-        self._log_structured(logging.ERROR, message, exc_info=exc_info_tuple, extra=extra)
+        self._log_structured(logging.ERROR, message, args=args, exc_info=exc_info_tuple, extra=extra)
 
-    def critical(self, message: str, exc_info: bool = False, **extra):
+    def critical(self, message: str, *args, exc_info: bool = False, **extra):
         """Log critical level with structured format."""
         if exc_info:
             import sys
             exc_info_tuple = sys.exc_info()
         else:
             exc_info_tuple = None
-        self._log_structured(logging.CRITICAL, message, exc_info=exc_info_tuple, extra=extra)
+        self._log_structured(
+            logging.CRITICAL,
+            message,
+            args=args,
+            exc_info=exc_info_tuple,
+            extra=extra,
+        )
 
 
 def setup_structured_logging(name: str, level: int = logging.INFO) -> StructuredLogger:
@@ -108,11 +113,11 @@ def setup_structured_logging(name: str, level: int = logging.INFO) -> Structured
     logger = logging.getLogger(name)
     logger.setLevel(level)
     
-    # Create console handler with JSON formatter
-    handler = logging.StreamHandler()
-    handler.setLevel(level)
-    
-    logger.addHandler(handler)
+    # Attach handler once to avoid duplicate log lines on module reload.
+    if not logger.handlers:
+        handler = logging.StreamHandler()
+        handler.setLevel(level)
+        logger.addHandler(handler)
     return logger
 
 
