@@ -6,11 +6,11 @@ Provides JSON-structured logging with correlation IDs and performance tracking
 import json
 import logging
 import time
-import uuid
-from typing import Any, Dict, Optional
-from datetime import datetime
-from contextvars import ContextVar
 import traceback
+import uuid
+from contextvars import ContextVar
+from datetime import datetime
+from typing import Any, Optional
 
 # Context variables for tracking
 TRACE_ID: ContextVar[str] = ContextVar("trace_id", default=None)
@@ -27,12 +27,12 @@ class StructuredLogger(logging.Logger):
         message: str,
         args: tuple = (),
         exc_info: Optional[tuple] = None,
-        extra: Optional[Dict[str, Any]] = None,
+        extra: Optional[dict[str, Any]] = None,
         **kwargs,
     ):
         """Log with structured JSON format."""
         timestamp = datetime.utcnow().isoformat() + "Z"
-        
+
         # Build context
         context = {
             "timestamp": timestamp,
@@ -40,24 +40,24 @@ class StructuredLogger(logging.Logger):
             "logger": self.name,
             "message": message % args if args else message,
         }
-        
+
         # Add trace context
         trace_id = TRACE_ID.get()
         if trace_id:
             context["trace_id"] = trace_id
-        
+
         request_id = REQUEST_ID.get()
         if request_id:
             context["request_id"] = request_id
-        
+
         user_id = USER_ID.get()
         if user_id:
             context["user_id"] = user_id
-        
+
         # Add extra fields
         if extra:
             context.update(extra)
-        
+
         # Add exception info if present
         if exc_info:
             context["exception"] = {
@@ -65,7 +65,7 @@ class StructuredLogger(logging.Logger):
                 "message": str(exc_info[1]),
                 "traceback": traceback.format_exception(*exc_info),
             }
-        
+
         # Log as JSON
         log_entry = json.dumps(context, default=str)
         super().log(level, log_entry)
@@ -86,15 +86,19 @@ class StructuredLogger(logging.Logger):
         """Log error level with structured format."""
         if exc_info:
             import sys
+
             exc_info_tuple = sys.exc_info()
         else:
             exc_info_tuple = None
-        self._log_structured(logging.ERROR, message, args=args, exc_info=exc_info_tuple, extra=extra)
+        self._log_structured(
+            logging.ERROR, message, args=args, exc_info=exc_info_tuple, extra=extra
+        )
 
     def critical(self, message: str, *args, exc_info: bool = False, **extra):
         """Log critical level with structured format."""
         if exc_info:
             import sys
+
             exc_info_tuple = sys.exc_info()
         else:
             exc_info_tuple = None
@@ -112,7 +116,7 @@ def setup_structured_logging(name: str, level: int = logging.INFO) -> Structured
     logging.setLoggerClass(StructuredLogger)
     logger = logging.getLogger(name)
     logger.setLevel(level)
-    
+
     # Attach handler once to avoid duplicate log lines on module reload.
     if not logger.handlers:
         handler = logging.StreamHandler()
@@ -166,7 +170,7 @@ class PerformanceTimer:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.duration = (time.time() - self.start_time) * 1000  # Convert to ms
-        
+
         if exc_type:
             self.logger.error(
                 f"Operation '{self.operation_name}' failed",

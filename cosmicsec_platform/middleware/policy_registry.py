@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from typing import Dict, Optional
 
 
 @dataclass(frozen=True)
@@ -14,11 +13,11 @@ class RoutePolicy:
     auth_policy: str  # deny | demo_only | limited
     response_profile: str
 
-    def to_dict(self) -> Dict[str, str]:
+    def to_dict(self) -> dict[str, str]:
         return asdict(self)
 
 
-ROUTE_POLICIES: Dict[str, RoutePolicy] = {
+ROUTE_POLICIES: dict[str, RoutePolicy] = {
     "auth.login": RoutePolicy(
         route_key="auth.login",
         criticality="security_critical",
@@ -78,8 +77,7 @@ ROUTE_POLICIES: Dict[str, RoutePolicy] = {
 }
 
 
-def get_policy(route_key: Optional[str]) -> Optional[RoutePolicy]:
+def get_policy(route_key: str | None) -> RoutePolicy | None:
     if not route_key:
         return None
     return ROUTE_POLICIES.get(route_key)
-

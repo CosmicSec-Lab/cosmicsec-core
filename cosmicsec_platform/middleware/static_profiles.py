@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 
 from fastapi import Request
 
-StaticProfile = Dict[str, Any]
+StaticProfile = dict[str, Any]
 
 
-def auth_login_profile(_: Request, payload: Optional[Dict[str, Any]]) -> StaticProfile:
+def auth_login_profile(_: Request, payload: dict[str, Any] | None) -> StaticProfile:
     email = (payload or {}).get("email", "demo@cosmicsec.local")
     return {
         "status": "preview_auth",
@@ -23,7 +23,7 @@ def auth_login_profile(_: Request, payload: Optional[Dict[str, Any]]) -> StaticP
     }
 
 
-def scan_create_profile(_: Request, payload: Optional[Dict[str, Any]]) -> StaticProfile:
+def scan_create_profile(_: Request, payload: dict[str, Any] | None) -> StaticProfile:
     return {
         "id": f"fallback-{int(time.time())}",
         "target": (payload or {}).get("target", "unknown"),
@@ -34,7 +34,7 @@ def scan_create_profile(_: Request, payload: Optional[Dict[str, Any]]) -> Static
     }
 
 
-def scan_get_profile(_: Request, payload: Optional[Dict[str, Any]]) -> StaticProfile:
+def scan_get_profile(_: Request, payload: dict[str, Any] | None) -> StaticProfile:
     return {
         "id": (payload or {}).get("scan_id", "unknown"),
         "status": "degraded_unavailable",
@@ -44,20 +44,23 @@ def scan_get_profile(_: Request, payload: Optional[Dict[str, Any]]) -> StaticPro
     }
 
 
-def recon_lookup_profile(_: Request, payload: Optional[Dict[str, Any]]) -> StaticProfile:
+def recon_lookup_profile(_: Request, payload: dict[str, Any] | None) -> StaticProfile:
     target = (payload or {}).get("target", "unknown")
     return {
         "target": target,
         "timestamp": time.time(),
         "findings": [
-            {"source": "static", "summary": "Dynamic recon unavailable. Returned fallback preview only."}
+            {
+                "source": "static",
+                "summary": "Dynamic recon unavailable. Returned fallback preview only.",
+            }
         ],
         "advisory": "Run full recon once dynamic services recover.",
         "runbook": "SOC-DR-RECON-001",
     }
 
 
-def ai_health_profile(_: Request, __: Optional[Dict[str, Any]]) -> StaticProfile:
+def ai_health_profile(_: Request, __: dict[str, Any] | None) -> StaticProfile:
     return {
         "status": "degraded",
         "service": "ai-service",
@@ -67,7 +70,7 @@ def ai_health_profile(_: Request, __: Optional[Dict[str, Any]]) -> StaticProfile
     }
 
 
-def report_generate_profile(_: Request, payload: Optional[Dict[str, Any]]) -> StaticProfile:
+def report_generate_profile(_: Request, payload: dict[str, Any] | None) -> StaticProfile:
     return {
         "report_id": f"fallback-report-{int(time.time())}",
         "status": "queued_fallback",
@@ -78,7 +81,7 @@ def report_generate_profile(_: Request, payload: Optional[Dict[str, Any]]) -> St
     }
 
 
-def ai_analyze_profile(_: Request, payload: Optional[Dict[str, Any]]) -> StaticProfile:
+def ai_analyze_profile(_: Request, payload: dict[str, Any] | None) -> StaticProfile:
     return {
         "analysis_id": f"demo-analysis-{int(time.time())}",
         "status": "complete",
@@ -89,10 +92,22 @@ def ai_analyze_profile(_: Request, payload: Optional[Dict[str, Any]]) -> StaticP
             "vectors. Immediate remediation recommended for critical findings."
         ),
         "mitre_mappings": [
-            {"technique_id": "T1190", "technique_name": "Exploit Public-Facing Application", "tactic": "Initial Access"},
-            {"technique_id": "T1059", "technique_name": "Command and Scripting Interpreter", "tactic": "Execution"},
+            {
+                "technique_id": "T1190",
+                "technique_name": "Exploit Public-Facing Application",
+                "tactic": "Initial Access",
+            },
+            {
+                "technique_id": "T1059",
+                "technique_name": "Command and Scripting Interpreter",
+                "tactic": "Execution",
+            },
             {"technique_id": "T1078", "technique_name": "Valid Accounts", "tactic": "Persistence"},
-            {"technique_id": "T1083", "technique_name": "File and Directory Discovery", "tactic": "Discovery"},
+            {
+                "technique_id": "T1083",
+                "technique_name": "File and Directory Discovery",
+                "tactic": "Discovery",
+            },
         ],
         "recommendations": [
             "Patch CVE-2024-1234 on web application server immediately.",
@@ -106,7 +121,7 @@ def ai_analyze_profile(_: Request, payload: Optional[Dict[str, Any]]) -> StaticP
     }
 
 
-def ai_correlate_profile(_: Request, payload: Optional[Dict[str, Any]]) -> StaticProfile:
+def ai_correlate_profile(_: Request, payload: dict[str, Any] | None) -> StaticProfile:
     return {
         "correlation_id": f"demo-correlation-{int(time.time())}",
         "status": "complete",
@@ -132,7 +147,7 @@ def ai_correlate_profile(_: Request, payload: Optional[Dict[str, Any]]) -> Stati
     }
 
 
-def recon_dns_profile(_: Request, payload: Optional[Dict[str, Any]]) -> StaticProfile:
+def recon_dns_profile(_: Request, payload: dict[str, Any] | None) -> StaticProfile:
     target = (payload or {}).get("target", "example.com")
     return {
         "target": target,
@@ -152,7 +167,7 @@ def recon_dns_profile(_: Request, payload: Optional[Dict[str, Any]]) -> StaticPr
     }
 
 
-def collab_rooms_profile(_: Request, payload: Optional[Dict[str, Any]]) -> StaticProfile:
+def collab_rooms_profile(_: Request, payload: dict[str, Any] | None) -> StaticProfile:
     return {
         "rooms": [
             {
@@ -177,7 +192,7 @@ def collab_rooms_profile(_: Request, payload: Optional[Dict[str, Any]]) -> Stati
     }
 
 
-def bugbounty_programs_profile(_: Request, payload: Optional[Dict[str, Any]]) -> StaticProfile:
+def bugbounty_programs_profile(_: Request, payload: dict[str, Any] | None) -> StaticProfile:
     return {
         "programs": [
             {
@@ -205,14 +220,44 @@ def bugbounty_programs_profile(_: Request, payload: Optional[Dict[str, Any]]) ->
     }
 
 
-def integration_list_profile(_: Request, payload: Optional[Dict[str, Any]]) -> StaticProfile:
+def integration_list_profile(_: Request, payload: dict[str, Any] | None) -> StaticProfile:
     return {
         "integrations": [
-            {"id": "int-001", "name": "Slack", "type": "notification", "status": "connected", "last_sync": "2024-01-15T12:00:00Z"},
-            {"id": "int-002", "name": "Jira", "type": "ticketing", "status": "connected", "last_sync": "2024-01-15T11:30:00Z"},
-            {"id": "int-003", "name": "Splunk", "type": "siem", "status": "disconnected", "last_sync": None},
-            {"id": "int-004", "name": "PagerDuty", "type": "alerting", "status": "connected", "last_sync": "2024-01-15T10:00:00Z"},
-            {"id": "int-005", "name": "GitHub", "type": "scm", "status": "connected", "last_sync": "2024-01-15T09:00:00Z"},
+            {
+                "id": "int-001",
+                "name": "Slack",
+                "type": "notification",
+                "status": "connected",
+                "last_sync": "2024-01-15T12:00:00Z",
+            },
+            {
+                "id": "int-002",
+                "name": "Jira",
+                "type": "ticketing",
+                "status": "connected",
+                "last_sync": "2024-01-15T11:30:00Z",
+            },
+            {
+                "id": "int-003",
+                "name": "Splunk",
+                "type": "siem",
+                "status": "disconnected",
+                "last_sync": None,
+            },
+            {
+                "id": "int-004",
+                "name": "PagerDuty",
+                "type": "alerting",
+                "status": "connected",
+                "last_sync": "2024-01-15T10:00:00Z",
+            },
+            {
+                "id": "int-005",
+                "name": "GitHub",
+                "type": "scm",
+                "status": "connected",
+                "last_sync": "2024-01-15T09:00:00Z",
+            },
         ],
         "total": 5,
         "connected": 4,
@@ -220,7 +265,7 @@ def integration_list_profile(_: Request, payload: Optional[Dict[str, Any]]) -> S
     }
 
 
-def agent_register_profile(_: Request, payload: Optional[Dict[str, Any]]) -> StaticProfile:
+def agent_register_profile(_: Request, payload: dict[str, Any] | None) -> StaticProfile:
     return {
         "agent_id": f"agent-demo-{int(time.time())}",
         "status": "registered_fallback",
@@ -232,7 +277,7 @@ def agent_register_profile(_: Request, payload: Optional[Dict[str, Any]]) -> Sta
     }
 
 
-def agent_list_profile(_: Request, payload: Optional[Dict[str, Any]]) -> StaticProfile:
+def agent_list_profile(_: Request, payload: dict[str, Any] | None) -> StaticProfile:
     return {
         "agents": [
             {
@@ -282,4 +327,3 @@ STATIC_PROFILES = {
     "agent_register": agent_register_profile,
     "agent_list": agent_list_profile,
 }
-

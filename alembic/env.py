@@ -3,11 +3,11 @@ from __future__ import annotations
 import os
 from logging.config import fileConfig
 
-from alembic import context
 from sqlalchemy import create_engine, pool
 
-from services.common.db import Base  # noqa: F401 – registers all models
 import services.common.models  # noqa: F401 – ensures models are loaded
+from alembic import context
+from services.common.db import Base  # noqa: F401 – registers all models
 
 config = context.config
 

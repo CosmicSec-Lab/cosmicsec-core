@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any, Dict
+from typing import Any
 
 from fastapi import FastAPI
 
@@ -15,12 +15,12 @@ def _as_bool(value: str, default: bool = False) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
-def setup_observability(app: FastAPI, service_name: str, logger: logging.Logger) -> Dict[str, Any]:
+def setup_observability(app: FastAPI, service_name: str, logger: logging.Logger) -> dict[str, Any]:
     """Initialize optional Sentry + OpenTelemetry instrumentation.
 
     This function is safe to call even when dependencies are missing.
     """
-    state: Dict[str, Any] = {
+    state: dict[str, Any] = {
         "service": service_name,
         "sentry_enabled": False,
         "otel_enabled": False,
@@ -45,9 +45,12 @@ def setup_observability(app: FastAPI, service_name: str, logger: logging.Logger)
                 profiles_sample_rate=profiles_sample_rate,
             )
             state["sentry_enabled"] = True
-            logger.info("Sentry instrumentation enabled", service=service_name)
+            logger.info(
+                "Sentry instrumentation enabled [service=%s]",
+                service_name,
+            )
         except Exception as exc:  # pragma: no cover - dependency/runtime optional
-            logger.warning("Sentry initialization skipped: %s", exc, service=service_name)
+            logger.warning("Sentry initialization skipped [service=%s]: %s", service_name, exc)
 
     # -----------------------------
     # OpenTelemetry + Jaeger
@@ -80,7 +83,11 @@ def setup_observability(app: FastAPI, service_name: str, logger: logging.Logger)
                 exporter = JaegerExporter(agent_host_name=jaeger_host, agent_port=jaeger_port)
                 exporter_name = "jaeger"
             except Exception as exc:  # pragma: no cover - depends on optional exporter versions
-                logger.warning("Jaeger exporter unavailable; traces will stay local: %s", exc, service=service_name)
+                logger.warning(
+                    "Jaeger exporter unavailable; traces will stay local [service=%s]: %s",
+                    service_name,
+                    exc,
+                )
             if exporter is not None:
                 provider.add_span_processor(BatchSpanProcessor(exporter))
             current_provider = trace.get_tracer_provider()
@@ -93,13 +100,15 @@ def setup_observability(app: FastAPI, service_name: str, logger: logging.Logger)
             state["otel_enabled"] = True
             state["otel_exporter"] = exporter_name
             logger.info(
-                "OpenTelemetry instrumentation enabled",
-                service=service_name,
-                exporter=exporter_name,
-                jaeger_host=jaeger_host,
-                jaeger_port=jaeger_port,
+                "OpenTelemetry instrumentation enabled [service=%s exporter=%s jaeger=%s:%s]",
+                service_name,
+                exporter_name,
+                jaeger_host,
+                jaeger_port,
             )
         except Exception as exc:  # pragma: no cover - dependency/runtime optional
-            logger.warning("OpenTelemetry initialization skipped: %s", exc, service=service_name)
+            logger.warning(
+                "OpenTelemetry initialization skipped [service=%s]: %s", service_name, exc
+            )
 
     return state
