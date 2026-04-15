@@ -12,4 +12,3 @@ __all__ = [
     "get_policy",
     "STATIC_PROFILES",
 ]
-

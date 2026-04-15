@@ -1,6 +1,7 @@
 """Core ORM models for all CosmicSec service entities."""
 
 from sqlalchemy import (
+    JSON,
     Boolean,
     Column,
     DateTime,
@@ -8,7 +9,6 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
-    JSON,
     String,
     Text,
     func,
@@ -16,10 +16,10 @@ from sqlalchemy import (
 
 from .db import Base
 
-
 # ---------------------------------------------------------------------------
 # Auth / Users
 # ---------------------------------------------------------------------------
+
 
 class UserModel(Base):
     __tablename__ = "users"
@@ -79,14 +79,13 @@ class AuditLogModel(Base):
     extra = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
-    __table_args__ = (
-        Index("ix_audit_logs_created_at", "created_at"),
-    )
+    __table_args__ = (Index("ix_audit_logs_created_at", "created_at"),)
 
 
 # ---------------------------------------------------------------------------
 # Scans & Findings
 # ---------------------------------------------------------------------------
+
 
 class ScanModel(Base):
     __tablename__ = "scans"
@@ -130,14 +129,13 @@ class FindingModel(Base):
     extra = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
-    __table_args__ = (
-        Index("ix_findings_severity_created", "severity", "created_at"),
-    )
+    __table_args__ = (Index("ix_findings_severity_created", "severity", "created_at"),)
 
 
 # ---------------------------------------------------------------------------
 # CLI Agent Sessions
 # ---------------------------------------------------------------------------
+
 
 class AgentSessionModel(Base):
     __tablename__ = "agent_sessions"
@@ -154,6 +152,7 @@ class AgentSessionModel(Base):
 # ---------------------------------------------------------------------------
 # Bug Bounty
 # ---------------------------------------------------------------------------
+
 
 class BugBountyProgramModel(Base):
     __tablename__ = "bugbounty_programs"
@@ -189,6 +188,7 @@ class BugBountySubmissionModel(Base):
 # Collaboration
 # ---------------------------------------------------------------------------
 
+
 class CollabMessageModel(Base):
     __tablename__ = "collab_messages"
 
@@ -200,9 +200,7 @@ class CollabMessageModel(Base):
     thread_id = Column(String, nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
-    __table_args__ = (
-        Index("ix_collab_messages_room_created", "room_id", "created_at"),
-    )
+    __table_args__ = (Index("ix_collab_messages_room_created", "room_id", "created_at"),)
 
 
 class CollabReportSectionModel(Base):
@@ -229,6 +227,7 @@ class CollabReportSectionModel(Base):
 # Integration Service
 # ---------------------------------------------------------------------------
 
+
 class IntegrationConfigModel(Base):
     __tablename__ = "integration_configs"
 
@@ -251,6 +250,7 @@ class IntegrationConfigModel(Base):
 # Phase 5 — SOC / IR
 # ---------------------------------------------------------------------------
 
+
 class Phase5AlertModel(Base):
     __tablename__ = "phase5_alerts"
 
@@ -261,9 +261,7 @@ class Phase5AlertModel(Base):
     payload = Column(JSON, nullable=False, default=dict)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
-    __table_args__ = (
-        Index("ix_phase5_alerts_severity_created", "severity", "created_at"),
-    )
+    __table_args__ = (Index("ix_phase5_alerts_severity_created", "severity", "created_at"),)
 
 
 class Phase5IncidentModel(Base):

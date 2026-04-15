@@ -3,14 +3,12 @@ CosmicSec Advanced Caching System
 Provides Redis-based caching with automatic expiration, tags, and invalidation
 """
 
-import json
-import pickle
 import hashlib
-import asyncio
-from typing import Any, Callable, Optional, TypeVar, Union, List
-from functools import wraps
-from datetime import timedelta
+import json
 import os
+from datetime import timedelta
+from functools import wraps
+from typing import Any, Callable, Optional, TypeVar
 
 import redis
 import redis.asyncio as aioredis
@@ -37,7 +35,9 @@ async def init_redis_pool(
     global _redis_pool
     if _redis_pool is None:
         _redis_pool = await aioredis.from_url(
-            f"redis://:{password}@{host}:{port}/{db}" if password else f"redis://{host}:{port}/{db}",
+            f"redis://:{password}@{host}:{port}/{db}"
+            if password
+            else f"redis://{host}:{port}/{db}",
             encoding="utf-8",
             decode_responses=True,
             socket_connect_timeout=5,
@@ -111,7 +111,7 @@ class CacheManager:
         key: str,
         value: Any,
         ttl: Optional[timedelta] = None,
-        tags: Optional[List[str]] = None,
+        tags: Optional[list[str]] = None,
     ) -> bool:
         """Set value in cache with optional TTL and tags."""
         try:
@@ -125,7 +125,7 @@ class CacheManager:
             kwargs = {}
             if ttl:
                 kwargs["ex"] = int(ttl.total_seconds())
-            
+
             await self.redis.set(key, serialized, **kwargs)
 
             # Track tags for invalidation
@@ -183,55 +183,60 @@ class CacheManager:
 
 def cache_result(
     ttl: timedelta = timedelta(hours=1),
-    tags: Optional[List[str]] = None,
+    tags: Optional[list[str]] = None,
     cache_on_exception: bool = False,
 ):
     """
     Decorator for caching async function results.
-    
+
     Args:
         ttl: Time to live for cached result
         tags: List of tags for cache invalidation
         cache_on_exception: Whether to cache exception responses
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def wrapper(*args, **kwargs) -> Any:
             try:
                 redis_client = await get_redis()
                 cache_manager = CacheManager(redis_client)
-                
+
                 # Generate cache key
-                cache_key = f"{func.__module__}:{func.__name__}:{CacheKey.hash_args(*args, **kwargs)}"
-                
+                cache_key = (
+                    f"{func.__module__}:{func.__name__}:{CacheKey.hash_args(*args, **kwargs)}"
+                )
+
                 # Try to get from cache
                 cached = await cache_manager.get(cache_key)
                 if cached is not None:
                     return cached
-                
+
                 # Call function
                 result = await func(*args, **kwargs)
-                
+
                 # Cache result
                 await cache_manager.set(cache_key, result, ttl=ttl, tags=tags)
-                
+
                 return result
-            except Exception as e:
+            except Exception:
                 if cache_on_exception:
                     # Try to return cached error response
                     pass
                 raise
-        
+
         return wrapper
+
     return decorator
 
 
 # Simplified sync wrapper for sync functions
 def cache_result_sync(
     ttl: timedelta = timedelta(hours=1),
-    tags: Optional[List[str]] = None,
+    tags: Optional[list[str]] = None,
 ):
     """Decorator for caching sync function results."""
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args, **kwargs) -> Any:
@@ -240,10 +245,12 @@ def cache_result_sync(
                 redis_client = redis.from_url(
                     f"redis://{os.getenv('REDIS_HOST', 'localhost')}:{os.getenv('REDIS_PORT', 6379)}"
                 )
-                
+
                 # Generate cache key
-                cache_key = f"{func.__module__}:{func.__name__}:{CacheKey.hash_args(*args, **kwargs)}"
-                
+                cache_key = (
+                    f"{func.__module__}:{func.__name__}:{CacheKey.hash_args(*args, **kwargs)}"
+                )
+
                 # Try to get from cache
                 try:
                     cached = redis_client.get(cache_key)
@@ -251,10 +258,10 @@ def cache_result_sync(
                         return json.loads(cached)
                 except Exception:
                     pass
-                
+
                 # Call function
                 result = func(*args, **kwargs)
-                
+
                 # Cache result
                 if isinstance(result, (dict, list)):
                     redis_client.setex(
@@ -264,15 +271,16 @@ def cache_result_sync(
                     )
                 else:
                     redis_client.setex(cache_key, int(ttl.total_seconds()), result)
-                
+
                 # Track tags
                 if tags:
                     for tag in tags:
                         redis_client.sadd(f"tag:{tag}", cache_key)
-                
+
                 return result
             except Exception:
                 return func(*args, **kwargs)
-        
+
         return wrapper
+
     return decorator

@@ -3,18 +3,18 @@ CosmicSec API Versioning System
 Provides support for multiple API versions with deprecation notices
 """
 
-from typing import Optional, Callable, List
-from enum import Enum
-from fastapi import Header, HTTPException, status
-from datetime import datetime
 import logging
+from enum import Enum
+from typing import Callable, Optional
+
+from fastapi import Header, HTTPException, status
 
 logger = logging.getLogger(__name__)
 
 
 class APIVersion(str, Enum):
     """Supported API versions."""
-    
+
     V1 = "v1"
     V2 = "v2"
     V3 = "v3"  # Future
@@ -22,7 +22,7 @@ class APIVersion(str, Enum):
 
 class DeprecationStatus(str, Enum):
     """Deprecation status of an endpoint."""
-    
+
     ACTIVE = "active"
     DEPRECATED = "deprecated"
     SUNSETTED = "sunsetted"
@@ -30,7 +30,7 @@ class DeprecationStatus(str, Enum):
 
 class APIEndpointMetadata:
     """Metadata for an API endpoint."""
-    
+
     def __init__(
         self,
         version: APIVersion,
@@ -46,28 +46,28 @@ class APIEndpointMetadata:
         self.sunset_date = sunset_date
         self.replacement_endpoint = replacement_endpoint
         self.migration_guide = migration_guide
-    
+
     def to_headers(self) -> dict:
         """Convert metadata to response headers."""
         headers = {
             "API-Version": self.version.value,
         }
-        
+
         if self.status == DeprecationStatus.DEPRECATED:
             headers["Deprecation"] = "true"
             if self.deprecation_date:
                 headers["Sunset"] = self.sunset_date or "2026-12-31T23:59:59Z"
             if self.replacement_endpoint:
                 headers["Link"] = f'<{self.replacement_endpoint}>; rel="successor-version"'
-        
+
         return headers
 
 
 class APIVersionManager:
     """Manages API versions and deprecation."""
-    
+
     _endpoints: dict = {}
-    
+
     @classmethod
     def register_endpoint(
         cls,
@@ -78,7 +78,7 @@ class APIVersionManager:
         if endpoint_path not in cls._endpoints:
             cls._endpoints[endpoint_path] = {}
         cls._endpoints[endpoint_path][metadata.version] = metadata
-    
+
     @classmethod
     def get_metadata(
         cls,
@@ -87,12 +87,12 @@ class APIVersionManager:
     ) -> Optional[APIEndpointMetadata]:
         """Get metadata for an endpoint version."""
         return cls._endpoints.get(endpoint_path, {}).get(version)
-    
+
     @classmethod
     def validate_version(
         cls,
         requested_version: str,
-        supported_versions: List[APIVersion],
+        supported_versions: list[APIVersion],
     ) -> APIVersion:
         """Validate and normalize requested version."""
         try:
@@ -112,12 +112,12 @@ class APIVersionManager:
 
 # Decorator for versioned endpoints
 def versioned_endpoint(
-    supported_versions: List[APIVersion] = None,
+    supported_versions: list[APIVersion] = None,
     default_version: APIVersion = APIVersion.V1,
 ):
     """
     Decorator for versioned endpoints.
-    
+
     Usage:
         @versioned_endpoint(
             supported_versions=[APIVersion.V1, APIVersion.V2],
@@ -128,45 +128,47 @@ def versioned_endpoint(
     """
     if supported_versions is None:
         supported_versions = [APIVersion.V1]
-    
+
     def decorator(func: Callable) -> Callable:
-        async def wrapper(*args, api_version: str = Header(default=default_version.value), **kwargs):
+        async def wrapper(
+            *args, api_version: str = Header(default=default_version.value), **kwargs
+        ):
             # Validate version
             version = APIVersionManager.validate_version(api_version, supported_versions)
-            
+
             # Get metadata and add to response context
             # This should be handled by middleware to add headers
-            
+
             # Log version usage
             logger.info(f"Endpoint called with API version: {version}")
-            
+
             # Call original function
             return await func(*args, api_version=version, **kwargs)
-        
+
         wrapper.__wrapped__ = func
         return wrapper
-    
+
     return decorator
 
 
 class APIVersionMiddleware:
     """Middleware for API version handling."""
-    
+
     @staticmethod
     async def process_request(request, call_next):
         """Process API version from request headers."""
         # Extract version from header or default to v1
         api_version = request.headers.get("API-Version", "v1")
-        
+
         # Store in request state for access in endpoints
         request.state.api_version = api_version
-        
+
         # Process request
         response = await call_next(request)
-        
+
         # Add version to response headers
         response.headers["API-Version"] = api_version
-        
+
         return response
 
 
@@ -205,13 +207,13 @@ def get_version_metadata_for_response(
 ) -> dict:
     """Get version metadata to include in API response."""
     metadata = ENDPOINT_REGISTRY.get(endpoint_path, {}).get(version)
-    
+
     if metadata:
         response_meta = {
             "api_version": version.value,
             "status": metadata.status.value,
         }
-        
+
         if metadata.status == DeprecationStatus.DEPRECATED:
             response_meta["deprecation_warning"] = {
                 "message": "This API version is deprecated",
@@ -219,10 +221,10 @@ def get_version_metadata_for_response(
                 "sunset_date": metadata.sunset_date,
                 "migration_guide": metadata.migration_guide,
             }
-            
+
             if metadata.replacement_endpoint:
                 response_meta["replacement_endpoint"] = metadata.replacement_endpoint
-        
+
         return response_meta
-    
+
     return {"api_version": version.value, "status": DeprecationStatus.ACTIVE.value}

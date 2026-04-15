@@ -9,7 +9,7 @@ import time
 import uuid
 from collections import deque
 from enum import Enum
-from typing import Any, Callable, Deque, Dict, Optional
+from typing import Any, Callable, Optional
 
 import httpx
 from fastapi import HTTPException, Request, status
@@ -19,7 +19,7 @@ from cosmicsec_platform.contracts.runtime_metadata import HYBRID_SCHEMA, HYBRID_
 
 from .policy_registry import get_policy
 
-StaticHandler = Callable[[Request, Optional[Dict[str, Any]]], Dict[str, Any]]
+StaticHandler = Callable[[Request, Optional[dict[str, Any]]], dict[str, Any]]
 
 
 class RuntimeMode(str, Enum):
@@ -33,19 +33,25 @@ class RuntimeMode(str, Enum):
 class HybridRouter:
     def __init__(
         self,
-        service_urls: Dict[str, str],
+        service_urls: dict[str, str],
         *,
-        static_profiles: Optional[Dict[str, StaticHandler]] = None,
+        static_profiles: dict[str, StaticHandler] | None = None,
     ) -> None:
         self.service_urls = service_urls
         self.static_profiles = static_profiles or {}
         self.logger = logging.getLogger(__name__)
         env_mode = os.getenv("PLATFORM_RUNTIME_MODE", RuntimeMode.HYBRID.value).lower()
-        self.default_mode = RuntimeMode(env_mode) if env_mode in RuntimeMode._value2member_map_ else RuntimeMode.HYBRID
+        self.default_mode = (
+            RuntimeMode(env_mode)
+            if env_mode in RuntimeMode._value2member_map_
+            else RuntimeMode.HYBRID
+        )
         self.trace_export_url = os.getenv("COSMICSEC_TRACE_EXPORT_URL", "").strip()
-        self.canary_dynamic_percent = self._sanitize_percent(os.getenv("COSMICSEC_DYNAMIC_CANARY_PERCENT", "0"))
+        self.canary_dynamic_percent = self._sanitize_percent(
+            os.getenv("COSMICSEC_DYNAMIC_CANARY_PERCENT", "0")
+        )
         trace_buffer_size = int(os.getenv("COSMICSEC_TRACE_BUFFER_SIZE", "500"))
-        self.trace_buffer: Deque[Dict[str, Any]] = deque(maxlen=max(10, trace_buffer_size))
+        self.trace_buffer: deque[dict[str, Any]] = deque(maxlen=max(10, trace_buffer_size))
         self.metrics = {
             "dynamic_total": 0,
             "dynamic_success": 0,
@@ -58,7 +64,7 @@ class HybridRouter:
         mode, _ = self.resolve_mode_with_context(request)
         return mode
 
-    def resolve_mode_with_context(self, request: Request) -> tuple[RuntimeMode, Dict[str, Any]]:
+    def resolve_mode_with_context(self, request: Request) -> tuple[RuntimeMode, dict[str, Any]]:
         header_mode = request.headers.get("X-Platform-Mode", "").strip().lower()
         if header_mode in RuntimeMode._value2member_map_:
             return RuntimeMode(header_mode), {
@@ -104,12 +110,12 @@ class HybridRouter:
         service: str,
         path: str,
         method: str = "GET",
-        payload: Optional[Dict[str, Any]] = None,
-        params: Optional[Dict[str, Any]] = None,
-        headers: Optional[Dict[str, str]] = None,
+        payload: dict[str, Any] | None = None,
+        params: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
         timeout: float = 10.0,
-        static_handler: Optional[StaticHandler] = None,
-        route_key: Optional[str] = None,
+        static_handler: StaticHandler | None = None,
+        route_key: str | None = None,
     ) -> JSONResponse:
         decision_start = time.time()
         mode, mode_context = self.resolve_mode_with_context(request)
@@ -121,11 +127,11 @@ class HybridRouter:
             profile_handler = self.static_profiles.get(policy.response_profile)
 
         async def _attach_contract(
-            body: Dict[str, Any],
+            body: dict[str, Any],
             *,
             route: str,
             degraded: bool,
-            reason: Optional[str] = None,
+            reason: str | None = None,
             status_code: int = 200,
             outcome: str = "ok",
         ) -> JSONResponse:
@@ -188,7 +194,11 @@ class HybridRouter:
                     status_code=503,
                     outcome="policy_denied",
                 )
-            if policy is not None and policy.auth_policy == "demo_only" and mode != RuntimeMode.DEMO:
+            if (
+                policy is not None
+                and policy.auth_policy == "demo_only"
+                and mode != RuntimeMode.DEMO
+            ):
                 self.metrics["policy_denied_total"] += 1
                 return await _attach_contract(
                     {"status": "denied", "detail": "Static auth fallback is demo-only."},
@@ -250,7 +260,7 @@ class HybridRouter:
                 detail=f"{service} service unavailable",
             ) from exc
 
-    def get_metrics(self) -> Dict[str, Any]:
+    def get_metrics(self) -> dict[str, Any]:
         dynamic_total = self.metrics["dynamic_total"]
         dynamic_success = self.metrics["dynamic_success"]
         success_rate = (dynamic_success / dynamic_total) if dynamic_total else 0.0
@@ -259,7 +269,7 @@ class HybridRouter:
             "dynamic_success_rate": round(success_rate, 4),
         }
 
-    async def _export_trace(self, event: Dict[str, Any]) -> None:
+    async def _export_trace(self, event: dict[str, Any]) -> None:
         if not self.trace_export_url:
             return
         try:
@@ -268,12 +278,12 @@ class HybridRouter:
         except Exception:
             return
 
-    def get_recent_traces(self, limit: int = 50) -> list[Dict[str, Any]]:
+    def get_recent_traces(self, limit: int = 50) -> list[dict[str, Any]]:
         safe_limit = max(1, min(limit, 500))
         items = list(self.trace_buffer)
         return items[-safe_limit:]
 
-    def get_tracing_status(self) -> Dict[str, Any]:
+    def get_tracing_status(self) -> dict[str, Any]:
         return {
             "export_enabled": bool(self.trace_export_url),
             "export_url": self.trace_export_url or None,
@@ -281,13 +291,13 @@ class HybridRouter:
             "buffer_used": len(self.trace_buffer),
         }
 
-    def get_rollout_config(self) -> Dict[str, Any]:
+    def get_rollout_config(self) -> dict[str, Any]:
         return {
             "default_mode": self.default_mode.value,
             "dynamic_canary_percent": self.canary_dynamic_percent,
         }
 
-    def set_rollout_config(self, dynamic_canary_percent: int) -> Dict[str, Any]:
+    def set_rollout_config(self, dynamic_canary_percent: int) -> dict[str, Any]:
         self.canary_dynamic_percent = self._sanitize_percent(dynamic_canary_percent)
         return self.get_rollout_config()
 
