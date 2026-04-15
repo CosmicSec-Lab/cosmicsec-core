@@ -9,7 +9,7 @@ import time
 import traceback
 import uuid
 from contextvars import ContextVar
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 # Context variables for tracking
@@ -31,7 +31,7 @@ class StructuredLogger(logging.Logger):
         **kwargs,
     ):
         """Log with structured JSON format."""
-        timestamp = datetime.utcnow().isoformat() + "Z"
+        timestamp = datetime.now(tz=UTC).isoformat() + "Z"
 
         # Build context
         context = {

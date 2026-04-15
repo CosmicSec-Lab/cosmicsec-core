@@ -4,7 +4,7 @@ Provides standardized error responses, custom exceptions, and error tracking
 """
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any
 
@@ -98,7 +98,7 @@ class CosmicSecException(Exception):
         self.severity = severity
         self.details = details or {}
         self.suggestion = suggestion
-        self.timestamp = datetime.utcnow().isoformat() + "Z"
+        self.timestamp = datetime.now(tz=UTC).isoformat() + "Z"
         super().__init__(message)
 
     def to_dict(self) -> dict[str, Any]:
@@ -256,7 +256,7 @@ class ErrorResponse:
         response = {
             "detail": message,
             "error_code": error_code.value,
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(tz=UTC).isoformat() + "Z",
         }
 
         if details:
