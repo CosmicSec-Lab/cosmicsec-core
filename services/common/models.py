@@ -304,3 +304,69 @@ class Phase5IOCModel(Base):
     confidence = Column(Float, nullable=False, default=0.5)
     tags = Column(JSON, nullable=False, default=list)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+# ---------------------------------------------------------------------------
+# Plugin Marketplace (Phase L)
+# ---------------------------------------------------------------------------
+
+
+class PluginMarketplaceModel(Base):
+    __tablename__ = "plugin_marketplace"
+
+    id = Column(String, primary_key=True)
+    name = Column(String, nullable=False, unique=True, index=True)
+    version = Column(String, nullable=False, default="0.0.0")
+    description = Column(Text, nullable=True)
+    author = Column(String, nullable=True)
+    tags = Column(JSON, nullable=False, default=list)
+    download_url = Column(String, nullable=True)
+    checksum_sha256 = Column(String, nullable=True)
+    downloads = Column(Integer, nullable=False, default=0)
+    source_repo = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class PluginRatingModel(Base):
+    __tablename__ = "plugin_ratings"
+
+    id = Column(String, primary_key=True)
+    plugin_id = Column(String, nullable=False, index=True)
+    user_id = Column(String, nullable=False)
+    rating = Column(Integer, nullable=False)
+    comment = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (Index("ix_plugin_ratings_plugin_user", "plugin_id", "user_id"),)
+
+
+class PluginRepositoryModel(Base):
+    __tablename__ = "plugin_repositories"
+
+    id = Column(String, primary_key=True)
+    name = Column(String, nullable=False)
+    index_url = Column(String, nullable=False)
+    trust_level = Column(String, nullable=False, default="community")
+    enabled = Column(Boolean, nullable=False, default=True)
+    last_sync = Column(DateTime(timezone=True), nullable=True)
+    imported_count = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+# ---------------------------------------------------------------------------
+# Integration Event Log (Phase L)
+# ---------------------------------------------------------------------------
+
+
+class IntegrationEventModel(Base):
+    __tablename__ = "integration_events"
+
+    id = Column(String, primary_key=True)
+    provider = Column(String, nullable=False, index=True)
+    event_type = Column(String, nullable=False, index=True)
+    payload = Column(JSON, nullable=False, default=dict)
+    status = Column(String, nullable=False, default="stored")
+    response_code = Column(Integer, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (Index("ix_integration_events_provider_created", "provider", "created_at"),)
