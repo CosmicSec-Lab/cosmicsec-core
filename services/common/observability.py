@@ -53,7 +53,7 @@ def setup_observability(app: FastAPI, service_name: str, logger: logging.Logger)
             logger.warning("Sentry initialization skipped [service=%s]: %s", service_name, exc)
 
     # -----------------------------
-    # OpenTelemetry + Jaeger
+    # OpenTelemetry + OTLP (replaces deprecated Jaeger exporter)
     # -----------------------------
     otel_enabled = _as_bool(os.getenv("OTEL_ENABLED", "true"), default=True)
     if otel_enabled:
@@ -73,18 +73,29 @@ def setup_observability(app: FastAPI, service_name: str, logger: logging.Logger)
             )
             provider = TracerProvider(resource=resource)
 
-            jaeger_host = os.getenv("JAEGER_AGENT_HOST", "jaeger")
-            jaeger_port = int(os.getenv("JAEGER_AGENT_PORT", "6831"))
+            otlp_endpoint = os.getenv(
+                "OTEL_EXPORTER_OTLP_ENDPOINT", "http://jaeger:4317"
+            )
+            otlp_protocol = os.getenv("OTEL_EXPORTER_OTLP_PROTOCOL", "grpc")
             exporter = None
             exporter_name = "none"
             try:
-                from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+                if otlp_protocol == "http":
+                    from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
+                        OTLPSpanExporter,
+                    )
 
-                exporter = JaegerExporter(agent_host_name=jaeger_host, agent_port=jaeger_port)
-                exporter_name = "jaeger"
+                    exporter = OTLPSpanExporter(endpoint=otlp_endpoint)
+                else:
+                    from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
+                        OTLPSpanExporter,
+                    )
+
+                    exporter = OTLPSpanExporter(endpoint=otlp_endpoint)
+                exporter_name = f"otlp-{otlp_protocol}"
             except Exception as exc:  # pragma: no cover - depends on optional exporter versions
                 logger.warning(
-                    "Jaeger exporter unavailable; traces will stay local [service=%s]: %s",
+                    "OTLP exporter unavailable; traces will stay local [service=%s]: %s",
                     service_name,
                     exc,
                 )
@@ -100,11 +111,10 @@ def setup_observability(app: FastAPI, service_name: str, logger: logging.Logger)
             state["otel_enabled"] = True
             state["otel_exporter"] = exporter_name
             logger.info(
-                "OpenTelemetry instrumentation enabled [service=%s exporter=%s jaeger=%s:%s]",
+                "OpenTelemetry instrumentation enabled [service=%s exporter=%s endpoint=%s]",
                 service_name,
                 exporter_name,
-                jaeger_host,
-                jaeger_port,
+                otlp_endpoint,
             )
         except Exception as exc:  # pragma: no cover - dependency/runtime optional
             logger.warning(

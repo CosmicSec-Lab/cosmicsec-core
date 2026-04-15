@@ -14,7 +14,7 @@ from typing import Any, TypeVar
 import redis
 import redis.asyncio as aioredis
 
-# Try to import aioredis, fall back to redis
+# Using redis.asyncio (official async client)
 try:
     from redis.asyncio import Redis as AsyncRedis
 except ImportError:
