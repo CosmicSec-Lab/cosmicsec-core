@@ -4,16 +4,16 @@ Provides standardized error responses, custom exceptions, and error tracking
 """
 
 import logging
-from datetime import datetime
-from enum import Enum
-from typing import Any, Optional
+from datetime import UTC, datetime
+from enum import StrEnum
+from typing import Any
 
 from fastapi import status
 
 logger = logging.getLogger(__name__)
 
 
-class ErrorCode(str, Enum):
+class ErrorCode(StrEnum):
     """Standard error codes used throughout CosmicSec."""
 
     # Authentication & Authorization
@@ -71,7 +71,7 @@ class ErrorCode(str, Enum):
     UNKNOWN_ERROR = "UNKNOWN_ERROR"
 
 
-class ErrorSeverity(str, Enum):
+class ErrorSeverity(StrEnum):
     """Error severity levels."""
 
     INFO = "info"
@@ -89,8 +89,8 @@ class CosmicSecException(Exception):
         error_code: ErrorCode,
         status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR,
         severity: ErrorSeverity = ErrorSeverity.ERROR,
-        details: Optional[dict[str, Any]] = None,
-        suggestion: Optional[str] = None,
+        details: dict[str, Any] | None = None,
+        suggestion: str | None = None,
     ):
         self.message = message
         self.error_code = error_code
@@ -98,7 +98,7 @@ class CosmicSecException(Exception):
         self.severity = severity
         self.details = details or {}
         self.suggestion = suggestion
-        self.timestamp = datetime.utcnow().isoformat() + "Z"
+        self.timestamp = datetime.now(tz=UTC).isoformat() + "Z"
         super().__init__(message)
 
     def to_dict(self) -> dict[str, Any]:
@@ -121,7 +121,7 @@ class CosmicSecException(Exception):
 class ValidationError(CosmicSecException):
     """Raised when input validation fails."""
 
-    def __init__(self, message: str, fields: Optional[dict[str, str]] = None, **kwargs):
+    def __init__(self, message: str, fields: dict[str, str] | None = None, **kwargs):
         details = {"validation_errors": fields or {}}
         super().__init__(
             message,
@@ -147,7 +147,7 @@ class AuthenticationError(CosmicSecException):
 class AuthorizationError(CosmicSecException):
     """Raised when user lacks required permissions."""
 
-    def __init__(self, message: str, required_role: Optional[str] = None):
+    def __init__(self, message: str, required_role: str | None = None):
         super().__init__(
             message,
             ErrorCode.AUTH_INSUFFICIENT_PERMISSIONS,
@@ -173,7 +173,7 @@ class NotFoundError(CosmicSecException):
 class ConflictError(CosmicSecException):
     """Raised when operation conflicts with existing state."""
 
-    def __init__(self, message: str, details: Optional[dict[str, Any]] = None):
+    def __init__(self, message: str, details: dict[str, Any] | None = None):
         super().__init__(
             message,
             ErrorCode.RESOURCE_CONFLICT,
@@ -187,7 +187,7 @@ class RateLimitError(CosmicSecException):
     """Raised when rate limit is exceeded."""
 
     def __init__(
-        self, message: str = "Rate limit exceeded", retry_after: Optional[int] = None, **kwargs
+        self, message: str = "Rate limit exceeded", retry_after: int | None = None, **kwargs
     ):
         details = {}
         if retry_after:
@@ -209,8 +209,8 @@ class ServiceUnavailableError(CosmicSecException):
     def __init__(
         self,
         service_name: str,
-        message: Optional[str] = None,
-        retry_after: Optional[int] = None,
+        message: str | None = None,
+        retry_after: int | None = None,
     ):
         msg = message or f"Service '{service_name}' is temporarily unavailable"
         details = {"service": service_name}
@@ -230,7 +230,7 @@ class ServiceUnavailableError(CosmicSecException):
 class ExternalServiceError(CosmicSecException):
     """Raised when external API call fails."""
 
-    def __init__(self, service_name: str, original_error: Optional[str] = None, **kwargs):
+    def __init__(self, service_name: str, original_error: str | None = None, **kwargs):
         super().__init__(
             f"External service '{service_name}' returned an error",
             ErrorCode.EXTERNAL_SERVICE_ERROR,
@@ -249,14 +249,14 @@ class ErrorResponse:
     def build(
         message: str,
         error_code: ErrorCode,
-        details: Optional[dict[str, Any]] = None,
-        suggestion: Optional[str] = None,
+        details: dict[str, Any] | None = None,
+        suggestion: str | None = None,
     ) -> dict[str, Any]:
         """Build a standard error response."""
         response = {
             "detail": message,
             "error_code": error_code.value,
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(tz=UTC).isoformat() + "Z",
         }
 
         if details:
@@ -270,7 +270,7 @@ class ErrorResponse:
 
 def log_exception(
     exception: Exception,
-    context: Optional[dict[str, Any]] = None,
+    context: dict[str, Any] | None = None,
     level: int = logging.ERROR,
 ) -> None:
     """Log exception with context."""

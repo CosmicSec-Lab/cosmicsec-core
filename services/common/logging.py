@@ -9,13 +9,13 @@ import time
 import traceback
 import uuid
 from contextvars import ContextVar
-from datetime import datetime
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 # Context variables for tracking
 TRACE_ID: ContextVar[str] = ContextVar("trace_id", default=None)
 REQUEST_ID: ContextVar[str] = ContextVar("request_id", default=None)
-USER_ID: ContextVar[Optional[str]] = ContextVar("user_id", default=None)
+USER_ID: ContextVar[str | None] = ContextVar("user_id", default=None)
 
 
 class StructuredLogger(logging.Logger):
@@ -26,12 +26,12 @@ class StructuredLogger(logging.Logger):
         level: int,
         message: str,
         args: tuple = (),
-        exc_info: Optional[tuple] = None,
-        extra: Optional[dict[str, Any]] = None,
+        exc_info: tuple | None = None,
+        extra: dict[str, Any] | None = None,
         **kwargs,
     ):
         """Log with structured JSON format."""
-        timestamp = datetime.utcnow().isoformat() + "Z"
+        timestamp = datetime.now(tz=UTC).isoformat() + "Z"
 
         # Build context
         context = {
@@ -125,7 +125,7 @@ def setup_structured_logging(name: str, level: int = logging.INFO) -> Structured
     return logger
 
 
-def set_trace_id(trace_id: Optional[str] = None) -> str:
+def set_trace_id(trace_id: str | None = None) -> str:
     """Set the trace ID for current context."""
     if trace_id is None:
         trace_id = str(uuid.uuid4())
@@ -133,7 +133,7 @@ def set_trace_id(trace_id: Optional[str] = None) -> str:
     return trace_id
 
 
-def set_request_id(request_id: Optional[str] = None) -> str:
+def set_request_id(request_id: str | None = None) -> str:
     """Set the request ID for current context."""
     if request_id is None:
         request_id = str(uuid.uuid4())
@@ -141,7 +141,7 @@ def set_request_id(request_id: Optional[str] = None) -> str:
     return request_id
 
 
-def set_user_id(user_id: Optional[str]) -> None:
+def set_user_id(user_id: str | None) -> None:
     """Set the user ID for current context."""
     if user_id:
         USER_ID.set(user_id)
