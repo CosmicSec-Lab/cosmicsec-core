@@ -19,15 +19,19 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
 # ---------------------------------------------------------------------------
 # Stage 2: runtime
 # ---------------------------------------------------------------------------
-FROM scratch AS runtime
+FROM alpine:3.21 AS runtime
 
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
+RUN apk add --no-cache ca-certificates tzdata wget
+
 COPY --from=builder /broker /broker
+
+# Create non-root user
+RUN addgroup -S broker && adduser -S broker -G broker
+USER broker
 
 EXPOSE 8090
 
 HEALTHCHECK --interval=10s --timeout=5s --retries=3 \
-    CMD ["/broker", "-healthcheck"]
+    CMD wget -qO- http://localhost:8090/health || exit 1
 
 ENTRYPOINT ["/broker"]
