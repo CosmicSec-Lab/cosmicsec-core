@@ -8,8 +8,9 @@ import os
 import time
 import uuid
 from collections import deque
-from enum import Enum
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from enum import StrEnum
+from typing import Any
 
 import httpx
 from fastapi import HTTPException, Request, status
@@ -19,10 +20,10 @@ from cosmicsec_platform.contracts.runtime_metadata import HYBRID_SCHEMA, HYBRID_
 
 from .policy_registry import get_policy
 
-StaticHandler = Callable[[Request, Optional[dict[str, Any]]], dict[str, Any]]
+StaticHandler = Callable[[Request, dict[str, Any] | None], dict[str, Any]]
 
 
-class RuntimeMode(str, Enum):
+class RuntimeMode(StrEnum):
     DYNAMIC = "dynamic"
     HYBRID = "hybrid"
     STATIC = "static"

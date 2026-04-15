@@ -6,9 +6,10 @@ Provides Redis-based caching with automatic expiration, tags, and invalidation
 import hashlib
 import json
 import os
+from collections.abc import Callable
 from datetime import timedelta
 from functools import wraps
-from typing import Any, Callable, Optional, TypeVar
+from typing import Any, TypeVar
 
 import redis
 import redis.asyncio as aioredis
@@ -22,13 +23,13 @@ except ImportError:
 T = TypeVar("T")
 
 # Redis connection pool
-_redis_pool: Optional[AsyncRedis] = None
+_redis_pool: AsyncRedis | None = None
 
 
 async def init_redis_pool(
     host: str = "localhost",
     port: int = 6379,
-    password: Optional[str] = None,
+    password: str | None = None,
     db: int = 0,
 ) -> None:
     """Initialize Redis connection pool."""
@@ -93,7 +94,7 @@ class CacheManager:
     def __init__(self, redis_client: AsyncRedis):
         self.redis = redis_client
 
-    async def get(self, key: str) -> Optional[Any]:
+    async def get(self, key: str) -> Any | None:
         """Get value from cache."""
         try:
             value = await self.redis.get(key)
@@ -110,8 +111,8 @@ class CacheManager:
         self,
         key: str,
         value: Any,
-        ttl: Optional[timedelta] = None,
-        tags: Optional[list[str]] = None,
+        ttl: timedelta | None = None,
+        tags: list[str] | None = None,
     ) -> bool:
         """Set value in cache with optional TTL and tags."""
         try:
@@ -183,7 +184,7 @@ class CacheManager:
 
 def cache_result(
     ttl: timedelta = timedelta(hours=1),
-    tags: Optional[list[str]] = None,
+    tags: list[str] | None = None,
     cache_on_exception: bool = False,
 ):
     """
@@ -233,7 +234,7 @@ def cache_result(
 # Simplified sync wrapper for sync functions
 def cache_result_sync(
     ttl: timedelta = timedelta(hours=1),
-    tags: Optional[list[str]] = None,
+    tags: list[str] | None = None,
 ):
     """Decorator for caching sync function results."""
 

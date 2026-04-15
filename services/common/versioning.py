@@ -4,15 +4,15 @@ Provides support for multiple API versions with deprecation notices
 """
 
 import logging
-from enum import Enum
-from typing import Callable, Optional
+from collections.abc import Callable
+from enum import StrEnum
 
 from fastapi import Header, HTTPException, status
 
 logger = logging.getLogger(__name__)
 
 
-class APIVersion(str, Enum):
+class APIVersion(StrEnum):
     """Supported API versions."""
 
     V1 = "v1"
@@ -20,7 +20,7 @@ class APIVersion(str, Enum):
     V3 = "v3"  # Future
 
 
-class DeprecationStatus(str, Enum):
+class DeprecationStatus(StrEnum):
     """Deprecation status of an endpoint."""
 
     ACTIVE = "active"
@@ -35,10 +35,10 @@ class APIEndpointMetadata:
         self,
         version: APIVersion,
         status: DeprecationStatus = DeprecationStatus.ACTIVE,
-        deprecation_date: Optional[str] = None,
-        sunset_date: Optional[str] = None,
-        replacement_endpoint: Optional[str] = None,
-        migration_guide: Optional[str] = None,
+        deprecation_date: str | None = None,
+        sunset_date: str | None = None,
+        replacement_endpoint: str | None = None,
+        migration_guide: str | None = None,
     ):
         self.version = version
         self.status = status
@@ -84,7 +84,7 @@ class APIVersionManager:
         cls,
         endpoint_path: str,
         version: APIVersion,
-    ) -> Optional[APIEndpointMetadata]:
+    ) -> APIEndpointMetadata | None:
         """Get metadata for an endpoint version."""
         return cls._endpoints.get(endpoint_path, {}).get(version)
 
