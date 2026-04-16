@@ -370,3 +370,62 @@ class IntegrationEventModel(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     __table_args__ = (Index("ix_integration_events_provider_created", "provider", "created_at"),)
+
+
+# ---------------------------------------------------------------------------
+# Organizations (Phase R — Multi-tenancy)
+# ---------------------------------------------------------------------------
+
+
+class OrganizationModel(Base):
+    __tablename__ = "organizations"
+
+    id = Column(String, primary_key=True)
+    name = Column(String, nullable=False)
+    slug = Column(String, nullable=False, unique=True, index=True)
+    logo_url = Column(String, nullable=True)
+    primary_color = Column(String, nullable=True, default="#0EA5E9")
+    seat_limit = Column(Integer, nullable=False, default=5)
+    plan = Column(String, nullable=False, default="free")  # free|pro|enterprise
+    settings = Column(JSON, nullable=False, default=dict)
+    is_active = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+
+class OrganizationMemberModel(Base):
+    __tablename__ = "organization_members"
+
+    id = Column(String, primary_key=True)
+    org_id = Column(
+        String, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    user_id = Column(
+        String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    role = Column(String, nullable=False, default="member")  # owner|admin|member|viewer
+    invited_by = Column(String, nullable=True)
+    joined_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (Index("ix_org_members_org_user", "org_id", "user_id"),)
+
+
+class SSOProviderModel(Base):
+    __tablename__ = "sso_providers"
+
+    id = Column(String, primary_key=True)
+    org_id = Column(
+        String, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    provider_type = Column(String, nullable=False)  # oidc|saml
+    provider_name = Column(String, nullable=False)  # okta|azure|google|github
+    client_id = Column(String, nullable=True)
+    # client_secret is stored encrypted in settings JSONB
+    settings = Column(JSON, nullable=False, default=dict)
+    is_active = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
