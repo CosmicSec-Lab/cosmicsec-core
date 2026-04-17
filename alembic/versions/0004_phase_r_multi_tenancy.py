@@ -8,6 +8,7 @@ Create Date: 2026-04-16
 from __future__ import annotations
 
 import sqlalchemy as sa
+
 from alembic import op
 
 revision = "0004_phase_r_multi_tenancy"

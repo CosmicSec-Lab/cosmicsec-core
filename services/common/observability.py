@@ -73,9 +73,7 @@ def setup_observability(app: FastAPI, service_name: str, logger: logging.Logger)
             )
             provider = TracerProvider(resource=resource)
 
-            otlp_endpoint = os.getenv(
-                "OTEL_EXPORTER_OTLP_ENDPOINT", "http://jaeger:4317"
-            )
+            otlp_endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://jaeger:4317")
             otlp_protocol = os.getenv("OTEL_EXPORTER_OTLP_PROTOCOL", "grpc")
             exporter = None
             exporter_name = "none"

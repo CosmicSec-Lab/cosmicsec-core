@@ -405,9 +405,7 @@ class OrganizationMemberModel(Base):
     org_id = Column(
         String, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True
     )
-    user_id = Column(
-        String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
-    )
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     role = Column(String, nullable=False, default="member")  # owner|admin|member|viewer
     invited_by = Column(String, nullable=True)
     joined_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
