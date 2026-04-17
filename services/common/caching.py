@@ -5,6 +5,7 @@ Provides Redis-based caching with automatic expiration, tags, and invalidation
 
 import hashlib
 import json
+import logging
 import os
 from collections.abc import Callable
 from datetime import timedelta
@@ -19,6 +20,8 @@ try:
     from redis.asyncio import Redis as AsyncRedis
 except ImportError:
     AsyncRedis = None  # type: ignore
+
+logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
