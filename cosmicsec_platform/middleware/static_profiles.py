@@ -14,9 +14,9 @@ def auth_login_profile(_: Request, payload: dict[str, Any] | None) -> StaticProf
     email = (payload or {}).get("email", "demo@cosmicsec.local")
     return {
         "status": "preview_auth",
-        "access_token": "demo-preview-token",
-        "refresh_token": "demo-preview-refresh-token",
-        "token_type": "bearer",
+        "access_token": "demo-preview-token",  # nosec B105
+        "refresh_token": "demo-preview-refresh-token",  # nosec B105
+        "token_type": "bearer",  # nosec B105
         "expires_in": 1800,
         "preview_user": {"email": email, "role": "demo_viewer"},
         "next_action": "Use demo mode for preview auth or recover auth service for full login.",

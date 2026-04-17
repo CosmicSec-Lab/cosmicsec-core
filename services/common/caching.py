@@ -85,7 +85,7 @@ class CacheKey:
             sort_keys=True,
             default=str,
         )
-        return hashlib.md5(key_data.encode()).hexdigest()[:8]
+        return hashlib.sha256(key_data.encode()).hexdigest()[:16]
 
 
 class CacheManager:
@@ -258,7 +258,7 @@ def cache_result_sync(
                     if cached:
                         return json.loads(cached)
                 except Exception:
-                    pass
+                    logger.debug("Sync cache read failed for key %s", cache_key, exc_info=True)
 
                 # Call function
                 result = func(*args, **kwargs)
