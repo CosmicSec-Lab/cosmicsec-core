@@ -48,7 +48,7 @@ class ServiceRegistry:
         self._build_urls()
 
     def _build_urls(self):
-        """Build service URLs based on deployment mode."""
+        """Build service URLs based on deployment mode with environment overrides."""
         protocol = os.getenv("SERVICE_PROTOCOL", "http")
 
         # Get custom service host if provided (for self-hosted scenarios)
@@ -58,7 +58,16 @@ class ServiceRegistry:
             port = service_info["port"]
             service_name = service_info["name"]
 
-            if self._config.is_docker:
+            # Check for service-specific environment variable override
+            # Format: {SERVICE_KEY}_SERVICE_URL (e.g., AUTH_SERVICE_URL, SCAN_SERVICE_URL)
+            env_var_name = f"{key.upper()}_SERVICE_URL"
+            env_override = os.getenv(env_var_name)
+
+            if env_override:
+                # Service-specific override takes highest priority
+                url = env_override
+                logger.info(f"Service {key}: Using env override {env_var_name}")
+            elif self._config.is_docker:
                 # In Docker/Docker Compose: Use service name from docker-compose.yml
                 url = f"{protocol}://{service_name}:{port}"
             elif custom_service_host:
