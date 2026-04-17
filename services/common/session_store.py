@@ -36,22 +36,28 @@ class SessionStore(ABC):
         *,
         ip_address: str | None = None,
         user_agent: str | None = None,
-    ) -> bool: ...
+    ) -> bool:
+        raise NotImplementedError
 
     @abstractmethod
-    async def validate_session(self, session_id: str) -> bool: ...
+    async def validate_session(self, session_id: str) -> bool:
+        raise NotImplementedError
 
     @abstractmethod
-    async def get_session(self, session_id: str) -> dict[str, Any] | None: ...
+    async def get_session(self, session_id: str) -> dict[str, Any] | None:
+        raise NotImplementedError
 
     @abstractmethod
-    async def revoke_session(self, session_id: str) -> bool: ...
+    async def revoke_session(self, session_id: str) -> bool:
+        raise NotImplementedError
 
     @abstractmethod
-    async def revoke_all_sessions(self, user_id: str) -> int: ...
+    async def revoke_all_sessions(self, user_id: str) -> int:
+        raise NotImplementedError
 
     @abstractmethod
-    async def get_active_sessions(self, user_id: str) -> list[dict[str, Any]]: ...
+    async def get_active_sessions(self, user_id: str) -> list[dict[str, Any]]:
+        raise NotImplementedError
 
 
 # ---------------------------------------------------------------------------

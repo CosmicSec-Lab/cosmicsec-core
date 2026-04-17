@@ -5,8 +5,8 @@ from logging.config import fileConfig
 
 from sqlalchemy import create_engine, pool
 
-import services.common.models  # noqa: F401 – ensures models are loaded
 from alembic import context
+from services.common import models as _models  # ensures model side-effects are loaded
 from services.common.db import Base  # noqa: F401 – registers all models
 
 config = context.config
@@ -15,6 +15,7 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 target_metadata = Base.metadata
+_ = _models.__name__
 
 # Allow DATABASE_URL env var to override alembic.ini value
 _db_url = os.getenv("DATABASE_URL")

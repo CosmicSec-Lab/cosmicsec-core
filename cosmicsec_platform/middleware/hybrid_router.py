@@ -11,12 +11,14 @@ from collections import deque
 from collections.abc import Callable
 from enum import StrEnum
 from typing import Any
+from urllib.parse import urljoin
 
 import httpx
 from fastapi import HTTPException, Request, status
 from fastapi.responses import JSONResponse
 
 from cosmicsec_platform.contracts.runtime_metadata import HYBRID_SCHEMA, HYBRID_VERSION
+from services.common.security_utils import validate_outbound_url
 
 from .policy_registry import get_policy
 
@@ -48,6 +50,12 @@ class HybridRouter:
             else RuntimeMode.HYBRID
         )
         self.trace_export_url = os.getenv("COSMICSEC_TRACE_EXPORT_URL", "").strip()
+        self.safe_service_urls = {
+            name: validated
+            for name, raw in service_urls.items()
+            for validated in [validate_outbound_url(raw, allow_private_hosts=True)]
+            if validated
+        }
         self.canary_dynamic_percent = self._sanitize_percent(
             os.getenv("COSMICSEC_DYNAMIC_CANARY_PERCENT", "0")
         )
@@ -218,11 +226,23 @@ class HybridRouter:
             return await _attach_contract(body, route="static", degraded=True, outcome="static")
 
         try:
+            safe_base = self.safe_service_urls.get(service)
+            if not safe_base:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail=f"Unknown or unsafe service endpoint: {service}",
+                )
+            safe_path = "/" + str(path or "").lstrip("/")
+            if "//" in safe_path or safe_path.lower().startswith("/http"):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid service path",
+                )
             self.metrics["dynamic_total"] += 1
             async with httpx.AsyncClient() as client:
                 response = await client.request(
                     method=method.upper(),
-                    url=f"{self.service_urls[service]}{path}",
+                    url=urljoin(safe_base.rstrip("/") + "/", safe_path.lstrip("/")),
                     json=payload,
                     params=params,
                     headers=headers,
