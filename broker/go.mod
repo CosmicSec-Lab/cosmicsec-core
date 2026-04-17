@@ -1,6 +1,8 @@
 module github.com/cosmicsec/broker
 
-go 1.24
+go 1.24.0
+
+toolchain go1.24.13
 
 require (
 	github.com/google/uuid v1.6.0
@@ -25,6 +27,6 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/crypto v0.45.0 // indirect
-	golang.org/x/sys v0.30.0 // indirect
+	golang.org/x/sys v0.38.0 // indirect
 	google.golang.org/protobuf v1.35.1 // indirect
 )
