@@ -40,6 +40,7 @@ def _build_engine(url: str, *, read_only: bool = False):
     eng = create_engine(url, **kwargs)
 
     if _SLOW_QUERY_MS > 0 and not url.startswith("sqlite"):
+
         @event.listens_for(eng, "before_cursor_execute")
         def _before(conn, cursor, statement, parameters, context, executemany):
             context._query_start_time = time.monotonic()
@@ -81,4 +82,3 @@ def get_read_db():
         yield db
     finally:
         db.close()
-

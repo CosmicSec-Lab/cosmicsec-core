@@ -262,9 +262,7 @@ def upgrade() -> None:
             server_default=sa.text("now()"),
             nullable=False,
         ),
-        sa.ForeignKeyConstraint(
-            ["program_id"], ["bugbounty_programs.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["program_id"], ["bugbounty_programs.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="SET NULL"),
         sa.PrimaryKeyConstraint("id"),
     )
@@ -293,9 +291,7 @@ def upgrade() -> None:
     )
     op.create_index("ix_collab_messages_room_id", "collab_messages", ["room_id"])
     op.create_index("ix_collab_messages_thread_id", "collab_messages", ["thread_id"])
-    op.create_index(
-        "ix_collab_messages_room_created", "collab_messages", ["room_id", "created_at"]
-    )
+    op.create_index("ix_collab_messages_room_created", "collab_messages", ["room_id", "created_at"])
 
     # ------------------------------------------------------------------
     # collab_report_sections
@@ -353,9 +349,7 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index("ix_integration_configs_user_id", "integration_configs", ["user_id"])
-    op.create_index(
-        "ix_integration_configs_type", "integration_configs", ["integration_type"]
-    )
+    op.create_index("ix_integration_configs_type", "integration_configs", ["integration_type"])
 
     # ------------------------------------------------------------------
     # phase5_alerts

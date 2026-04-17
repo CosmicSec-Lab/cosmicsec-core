@@ -7,7 +7,6 @@ Create Date: 2026-04-16
 
 from __future__ import annotations
 
-import sqlalchemy as sa
 from alembic import op
 
 revision = "0005_phase_s_performance_indexes"

@@ -5,8 +5,6 @@ Revises:
 Create Date: 2026-03-14
 """
 
-
-
 revision = "0001_initial_placeholder"
 down_revision = None
 branch_labels = None
