@@ -56,14 +56,12 @@ class PlatformConfig:
     def _detect_os() -> OSType:
         """Detect the current operating system."""
         system = platform.system()
-        if system == "Windows":
-            return OSType.WINDOWS
-        elif system == "Linux":
-            return OSType.LINUX
-        elif system == "Darwin":
-            return OSType.MACOS
-        else:
-            return OSType.UNKNOWN
+        os_mapping = {
+            "Windows": OSType.WINDOWS,
+            "Linux": OSType.LINUX,
+            "Darwin": OSType.MACOS,
+        }
+        return os_mapping.get(system, OSType.UNKNOWN)
 
     @staticmethod
     def _detect_deployment_mode() -> DeploymentMode:
@@ -120,10 +118,7 @@ class PlatformConfig:
             pass
 
         # Method 3: Check for Docker environment variable
-        if os.getenv("DOCKER_HOST"):
-            return True
-
-        return False
+        return bool(os.getenv("DOCKER_HOST"))
 
     @staticmethod
     def _is_docker_compose() -> bool:
