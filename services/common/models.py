@@ -163,7 +163,7 @@ class AgentTaskModel(Base):
     tool = Column(String, nullable=False)
     target = Column(String, nullable=True)
     args = Column(JSON, nullable=False, default=list)
-    metadata = Column(JSON, nullable=False, default=dict)
+    task_metadata = Column(JSON, nullable=False, default=dict)
     status = Column(String, nullable=False, default="dispatched", index=True)
     progress = Column(Integer, nullable=False, default=0)
     message = Column(Text, nullable=True)
@@ -252,7 +252,7 @@ class BugBountyActivityModel(Base):
     activity_type = Column(String, nullable=False, index=True)
     actor = Column(String, nullable=True, index=True)
     detail = Column(Text, nullable=True)
-    metadata = Column(JSON, nullable=False, default=dict)
+    extra_metadata = Column(JSON, nullable=False, default=dict)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     __table_args__ = (
