@@ -31,6 +31,7 @@ class RuntimeMode(StrEnum):
     STATIC = "static"
     DEMO = "demo"
     EMERGENCY = "emergency"
+    LOCAL_WEB = "local_web"
 
 
 class HybridRouter:
@@ -74,7 +75,10 @@ class HybridRouter:
         return mode
 
     def resolve_mode_with_context(self, request: Request) -> tuple[RuntimeMode, dict[str, Any]]:
-        header_mode = request.headers.get("X-Platform-Mode", "").strip().lower()
+        header_mode = (
+            request.headers.get("X-CosmicSec-Mode") or request.headers.get("X-Platform-Mode", "")
+        ).strip().lower()
+        
         if header_mode in RuntimeMode._value2member_map_:
             return RuntimeMode(header_mode), {
                 "source": "header",
