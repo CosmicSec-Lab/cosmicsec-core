@@ -10,6 +10,7 @@ Phase S.2 — Read-replica support:
 import logging
 import os
 import time
+from threading import Lock
 
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import declarative_base, sessionmaker
@@ -64,10 +65,32 @@ _read_engine = _build_engine(_READ_URL, read_only=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 ReadSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=_read_engine)
 Base = declarative_base()
+_sqlite_schema_ready = False
+_sqlite_schema_lock = Lock()
+
+
+def _ensure_sqlite_schema() -> None:
+    """Create tables lazily for SQLite-only dev/test environments."""
+    global _sqlite_schema_ready
+    if _sqlite_schema_ready:
+        return
+    if not DATABASE_URL.startswith("sqlite"):
+        _sqlite_schema_ready = True
+        return
+
+    with _sqlite_schema_lock:
+        if _sqlite_schema_ready:
+            return
+        # Import model metadata lazily to avoid circular imports at module load time.
+        from services.common import models  # noqa: F401
+
+        Base.metadata.create_all(bind=engine)
+        _sqlite_schema_ready = True
 
 
 def get_db():
     """Yield a write-capable DB session (routes to primary)."""
+    _ensure_sqlite_schema()
     db = SessionLocal()
     try:
         yield db
@@ -77,6 +100,7 @@ def get_db():
 
 def get_read_db():
     """Yield a read-only DB session (routes to replica when configured)."""
+    _ensure_sqlite_schema()
     db = ReadSessionLocal()
     try:
         yield db
