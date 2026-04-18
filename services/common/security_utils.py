@@ -82,6 +82,7 @@ def validate_outbound_url(
     *,
     allowed_hosts: set[str] | None = None,
     allow_private_hosts: bool = False,
+    allow_onion_hosts: bool = False,
     require_https: bool = False,
 ) -> str | None:
     """Validate outbound URL for SSRF resistance and return normalized string."""
@@ -99,10 +100,14 @@ def validate_outbound_url(
     if not hostname:
         return None
 
+    is_onion = hostname.endswith(".onion")
+    if is_onion and not allow_onion_hosts:
+        return None
+
     if allowed_hosts:
         if hostname not in allowed_hosts:
             return None
-    elif not allow_private_hosts and _is_private_or_loopback(hostname):
+    elif not allow_private_hosts and not is_onion and _is_private_or_loopback(hostname):
         return None
 
     return parsed.geturl()
