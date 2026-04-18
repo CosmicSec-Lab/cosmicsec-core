@@ -93,7 +93,7 @@ class ScanModel(Base):
     id = Column(String, primary_key=True)
     user_id = Column(String, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     target = Column(String, nullable=False, index=True)
-    scan_type = Column(String, nullable=False, default="quick")
+    scan_types = Column(JSON, nullable=True)
     tool = Column(String, nullable=True)
     status = Column(String, nullable=False, default="pending", index=True)
     progress = Column(Integer, nullable=False, default=0)
