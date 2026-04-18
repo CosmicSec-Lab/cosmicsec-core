@@ -218,6 +218,47 @@ class BugBountySubmissionModel(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 
+class BugBountyThreadModel(Base):
+    __tablename__ = "bugbounty_threads"
+
+    id = Column(String, primary_key=True)
+    program_id = Column(
+        String, ForeignKey("bugbounty_programs.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    title = Column(String, nullable=False)
+    message = Column(Text, nullable=False)
+    participants = Column(JSON, nullable=False, default=list)
+    created_by = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (Index("ix_bugbounty_threads_program_created", "program_id", "created_at"),)
+
+
+class BugBountyActivityModel(Base):
+    __tablename__ = "bugbounty_activity"
+
+    id = Column(String, primary_key=True)
+    program_id = Column(
+        String, ForeignKey("bugbounty_programs.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    submission_id = Column(
+        String,
+        ForeignKey("bugbounty_submissions.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    activity_type = Column(String, nullable=False, index=True)
+    actor = Column(String, nullable=True, index=True)
+    detail = Column(Text, nullable=True)
+    metadata = Column(JSON, nullable=False, default=dict)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index("ix_bugbounty_activity_program_created", "program_id", "created_at"),
+        Index("ix_bugbounty_activity_submission_created", "submission_id", "created_at"),
+    )
+
+
 # ---------------------------------------------------------------------------
 # Collaboration
 # ---------------------------------------------------------------------------
