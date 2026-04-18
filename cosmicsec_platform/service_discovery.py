@@ -39,6 +39,7 @@ class ServiceRegistry:
         "compliance": {"port": 8013, "name": "compliance-service"},
         "org": {"port": 8014, "name": "org-service"},
         "admin": {"port": 8015, "name": "admin-service"},
+        "egress": {"port": 8016, "name": "egress-service"},
     }
 
     def __init__(self):

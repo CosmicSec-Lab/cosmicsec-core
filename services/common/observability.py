@@ -55,7 +55,9 @@ def setup_observability(app: FastAPI, service_name: str, logger: logging.Logger)
     # -----------------------------
     # OpenTelemetry + OTLP (replaces deprecated Jaeger exporter)
     # -----------------------------
-    otel_enabled = _as_bool(os.getenv("OTEL_ENABLED", "true"), default=True)
+    # Default to disabled to avoid noisy exporter retry logs in local/dev stacks
+    # where no OTLP collector is running. Enable explicitly with OTEL_ENABLED=true.
+    otel_enabled = _as_bool(os.getenv("OTEL_ENABLED", "false"), default=False)
     if otel_enabled:
         try:
             from opentelemetry import trace
