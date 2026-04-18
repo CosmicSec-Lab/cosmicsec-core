@@ -90,7 +90,7 @@ class ServiceHealthChecker:
                     error_message=f"HTTP {response.status_code}",
                 )
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             return ServiceHealth(
                 name=name,
                 status=HealthStatus.UNHEALTHY,
@@ -105,13 +105,9 @@ class ServiceHealthChecker:
                 error_message=str(e),
             )
 
-    async def check_multiple(
-        self, services: dict[str, str]
-    ) -> dict[str, ServiceHealth]:
+    async def check_multiple(self, services: dict[str, str]) -> dict[str, ServiceHealth]:
         """Check health of multiple services concurrently."""
-        tasks = [
-            self.check_service(name, url) for name, url in services.items()
-        ]
+        tasks = [self.check_service(name, url) for name, url in services.items()]
         results = await asyncio.gather(*tasks)
         return {service.name: service for service in results}
 
@@ -151,8 +147,7 @@ class DependencyMapper:
             failed_deps = [
                 dep
                 for dep in deps
-                if dep in health_status
-                and health_status[dep].status == HealthStatus.UNHEALTHY
+                if dep in health_status and health_status[dep].status == HealthStatus.UNHEALTHY
             ]
 
             if failed_deps:
@@ -185,26 +180,17 @@ class SystemHealthReport:
     @property
     def healthy_count(self) -> int:
         """Count of healthy services."""
-        return sum(
-            1 for s in self.services.values()
-            if s.status == HealthStatus.HEALTHY
-        )
+        return sum(1 for s in self.services.values() if s.status == HealthStatus.HEALTHY)
 
     @property
     def degraded_count(self) -> int:
         """Count of degraded services."""
-        return sum(
-            1 for s in self.services.values()
-            if s.status == HealthStatus.DEGRADED
-        )
+        return sum(1 for s in self.services.values() if s.status == HealthStatus.DEGRADED)
 
     @property
     def unhealthy_count(self) -> int:
         """Count of unhealthy services."""
-        return sum(
-            1 for s in self.services.values()
-            if s.status == HealthStatus.UNHEALTHY
-        )
+        return sum(1 for s in self.services.values() if s.status == HealthStatus.UNHEALTHY)
 
     @property
     def cascading_failures(self) -> dict[str, list[str]]:

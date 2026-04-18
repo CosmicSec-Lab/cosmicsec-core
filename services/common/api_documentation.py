@@ -6,8 +6,9 @@ Provides enhanced API documentation generation and API versioning capabilities.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from enum import Enum
-from typing import Any, Callable
+from typing import Any
 
 from fastapi import APIRouter, FastAPI
 from fastapi.openapi.utils import get_openapi
@@ -225,9 +226,7 @@ class APIDocumentationHelper:
         }
 
     @staticmethod
-    def add_deprecation_notice(
-        func: Callable, message: str
-    ) -> Callable:
+    def add_deprecation_notice(func: Callable, message: str) -> Callable:
         """Add deprecation notice to endpoint."""
         func.deprecated = True
         if not hasattr(func, "deprecation_message"):

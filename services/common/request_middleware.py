@@ -14,11 +14,11 @@ import json
 import logging
 import time
 import uuid
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import StreamingResponse
 
 logger = logging.getLogger(__name__)
 
@@ -44,29 +44,21 @@ def mask_sensitive_data(data: Any, depth: int = 0, max_depth: int = 5) -> Any:
     if isinstance(data, dict):
         return {
             k: "***REDACTED***"
-            if any(
-                sensitive in k.lower() for sensitive in SENSITIVE_FIELDS
-            )
+            if any(sensitive in k.lower() for sensitive in SENSITIVE_FIELDS)
             else mask_sensitive_data(v, depth + 1, max_depth)
             for k, v in data.items()
         }
     elif isinstance(data, list):
-        return [
-            mask_sensitive_data(item, depth + 1, max_depth) for item in data
-        ]
+        return [mask_sensitive_data(item, depth + 1, max_depth) for item in data]
     return data
 
 
 class RequestEnhancementMiddleware(BaseHTTPMiddleware):
     """Enhances requests with request ID and trace ID."""
 
-    async def dispatch(
-        self, request: Request, call_next: Callable
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
         # Generate or get request ID
-        request_id = request.headers.get("X-Request-ID") or str(
-            uuid.uuid4()
-        )
+        request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
         trace_id = request.headers.get("X-Trace-ID") or str(uuid.uuid4())
 
         # Add to request scope for later use
@@ -86,9 +78,7 @@ class RequestEnhancementMiddleware(BaseHTTPMiddleware):
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
     """Logs requests and responses with performance metrics."""
 
-    async def dispatch(
-        self, request: Request, call_next: Callable
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
         request_id = request.headers.get("X-Request-ID", "unknown")
         start_time = time.time()
 
@@ -112,12 +102,8 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                     "path": request.url.path,
                     "query": dict(request.query_params),
                     "body_size": len(body),
-                    "body_preview": masked_body
-                    if masked_body
-                    else "empty",
-                    "client": request.client.host
-                    if request.client
-                    else None,
+                    "body_preview": masked_body if masked_body else "empty",
+                    "client": request.client.host if request.client else None,
                 },
             )
         except Exception as e:
@@ -152,9 +138,7 @@ class InputValidationMiddleware(BaseHTTPMiddleware):
     # Maximum request body size (10 MB)
     MAX_BODY_SIZE = 10 * 1024 * 1024
 
-    async def dispatch(
-        self, request: Request, call_next: Callable
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
         # Check Content-Length
         content_length = request.headers.get("content-length")
         if content_length and int(content_length) > self.MAX_BODY_SIZE:

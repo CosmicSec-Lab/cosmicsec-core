@@ -9,12 +9,10 @@ import ipaddress
 import os
 import random
 from dataclasses import dataclass
-from typing import Literal
-from typing import Any
+from typing import Any, Literal
 from urllib.parse import urlparse
 
 import httpx
-
 
 DEFAULT_USER_AGENTS = {
     "desktop_chrome": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36",
@@ -122,7 +120,9 @@ def _pick_user_agent(service_name: str, profile: str, rotate_identity: bool) -> 
     return DEFAULT_USER_AGENTS.get(profile, DEFAULT_USER_AGENTS["desktop_chrome"])
 
 
-def _resolve_tor_mode(service_name: str, options: EgressOptions) -> Literal["enabled", "disabled", "auto"]:
+def _resolve_tor_mode(
+    service_name: str, options: EgressOptions
+) -> Literal["enabled", "disabled", "auto"]:
     requested = (options.tor_mode or "").strip().lower()
     if requested in {"enabled", "disabled", "auto"}:
         return requested  # type: ignore[return-value]
@@ -175,7 +175,9 @@ def resolve_egress_strategy(
     parsed = urlparse(target_url or "")
     hostname = (parsed.hostname or "").strip().lower()
     tor_mode = _resolve_tor_mode(service_name, opts)
-    tor_enabled = tor_mode == "enabled" or (tor_mode == "auto" and bool(hostname) and is_onion_hostname(hostname))
+    tor_enabled = tor_mode == "enabled" or (
+        tor_mode == "auto" and bool(hostname) and is_onion_hostname(hostname)
+    )
 
     profile = _pick_client_profile(service_name, opts)
     user_agent = _pick_user_agent(service_name, profile, opts.rotate_identity)
@@ -221,7 +223,9 @@ def create_async_client(
         "User-Agent": str(strategy.get("user_agent") or DEFAULT_USER_AGENTS["desktop_chrome"]),
         "Accept": "application/json, text/plain, */*",
     }
-    default_headers.update(DEVICE_PROFILE_HEADERS.get(profile, DEVICE_PROFILE_HEADERS["desktop_chrome"]))
+    default_headers.update(
+        DEVICE_PROFILE_HEADERS.get(profile, DEVICE_PROFILE_HEADERS["desktop_chrome"])
+    )
     if headers:
         default_headers.update(headers)
 

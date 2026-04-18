@@ -40,9 +40,7 @@ class StartupValidator:
         logger.info(f"✓ All {len(required_vars)} required environment variables present")
         return True
 
-    def check_database_connectivity(
-        self, database_url: str, timeout: int = 10
-    ) -> bool:
+    def check_database_connectivity(self, database_url: str, timeout: int = 10) -> bool:
         """Check PostgreSQL connectivity and basic query."""
         try:
             engine = create_engine(database_url, connect_args={"timeout": timeout})
@@ -127,16 +125,12 @@ class StartupValidator:
     def assert_ready(self) -> None:
         """Raise exception if startup validation failed."""
         if self.errors:
-            error_msg = "Startup validation failed:\n" + "\n".join(
-                f"  ✗ {e}" for e in self.errors
-            )
+            error_msg = "Startup validation failed:\n" + "\n".join(f"  ✗ {e}" for e in self.errors)
             logger.error(error_msg)
             raise RuntimeError(error_msg)
 
         if self.warnings:
-            warning_msg = "Startup warnings:\n" + "\n".join(
-                f"  ! {w}" for w in self.warnings
-            )
+            warning_msg = "Startup warnings:\n" + "\n".join(f"  ! {w}" for w in self.warnings)
             logger.warning(warning_msg)
 
 

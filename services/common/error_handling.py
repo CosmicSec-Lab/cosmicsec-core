@@ -12,7 +12,7 @@ import traceback
 from enum import Enum
 from typing import Any, Generic, TypeVar
 
-from fastapi import HTTPException, Request, status
+from fastapi import Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
@@ -183,9 +183,7 @@ class ServiceUnavailableException(CosmicSecException):
         )
 
 
-async def cosmic_sec_exception_handler(
-    request: Request, exc: CosmicSecException
-) -> JSONResponse:
+async def cosmic_sec_exception_handler(request: Request, exc: CosmicSecException) -> JSONResponse:
     """Handle CosmicSec exceptions with proper formatting."""
     logger.error(
         f"CosmicSec exception: {exc.code} - {exc.message}",
@@ -212,9 +210,7 @@ async def cosmic_sec_exception_handler(
     )
 
 
-async def general_exception_handler(
-    request: Request, exc: Exception
-) -> JSONResponse:
+async def general_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handle unexpected exceptions with proper logging."""
     logger.exception(
         "Unhandled exception",
