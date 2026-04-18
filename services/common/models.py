@@ -149,6 +149,40 @@ class AgentSessionModel(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 
+class AgentTaskModel(Base):
+    __tablename__ = "agent_tasks"
+
+    id = Column(String, primary_key=True)
+    agent_id = Column(
+        String,
+        ForeignKey("agent_sessions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    requested_by = Column(String, nullable=True, index=True)
+    tool = Column(String, nullable=False)
+    target = Column(String, nullable=True)
+    args = Column(JSON, nullable=False, default=list)
+    metadata = Column(JSON, nullable=False, default=dict)
+    status = Column(String, nullable=False, default="dispatched", index=True)
+    progress = Column(Integer, nullable=False, default=0)
+    message = Column(Text, nullable=True)
+    reason = Column(Text, nullable=True)
+    result = Column(JSON, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True)
+    updated_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+    __table_args__ = (
+        Index("ix_agent_tasks_agent_status", "agent_id", "status"),
+        Index("ix_agent_tasks_agent_created", "agent_id", "created_at"),
+    )
+
+
 # ---------------------------------------------------------------------------
 # Bug Bounty
 # ---------------------------------------------------------------------------
