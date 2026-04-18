@@ -36,7 +36,9 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index("ix_bugbounty_threads_program_id", "bugbounty_threads", ["program_id"])
-    op.create_index("ix_bugbounty_threads_program_created", "bugbounty_threads", ["program_id", "created_at"])
+    op.create_index(
+        "ix_bugbounty_threads_program_created", "bugbounty_threads", ["program_id", "created_at"]
+    )
 
     op.create_table(
         "bugbounty_activity",
@@ -54,15 +56,23 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.ForeignKeyConstraint(["program_id"], ["bugbounty_programs.id"], ondelete="CASCADE"),
-        sa.ForeignKeyConstraint(["submission_id"], ["bugbounty_submissions.id"], ondelete="SET NULL"),
+        sa.ForeignKeyConstraint(
+            ["submission_id"], ["bugbounty_submissions.id"], ondelete="SET NULL"
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index("ix_bugbounty_activity_program_id", "bugbounty_activity", ["program_id"])
     op.create_index("ix_bugbounty_activity_submission_id", "bugbounty_activity", ["submission_id"])
     op.create_index("ix_bugbounty_activity_activity_type", "bugbounty_activity", ["activity_type"])
     op.create_index("ix_bugbounty_activity_actor", "bugbounty_activity", ["actor"])
-    op.create_index("ix_bugbounty_activity_program_created", "bugbounty_activity", ["program_id", "created_at"])
-    op.create_index("ix_bugbounty_activity_submission_created", "bugbounty_activity", ["submission_id", "created_at"])
+    op.create_index(
+        "ix_bugbounty_activity_program_created", "bugbounty_activity", ["program_id", "created_at"]
+    )
+    op.create_index(
+        "ix_bugbounty_activity_submission_created",
+        "bugbounty_activity",
+        ["submission_id", "created_at"],
+    )
 
 
 def downgrade() -> None:

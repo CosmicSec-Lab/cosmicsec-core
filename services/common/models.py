@@ -169,7 +169,9 @@ class AgentTaskModel(Base):
     message = Column(Text, nullable=True)
     reason = Column(Text, nullable=True)
     result = Column(JSON, nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
+    )
     updated_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
