@@ -27,7 +27,7 @@ class UserModel(Base):
     id = Column(String, primary_key=True)
     email = Column(String, unique=True, nullable=False, index=True)
     full_name = Column(String, nullable=False)
-    hashed_password = Column(String, nullable=True)
+    hashed_password = Column("password_hash", String, nullable=True)
     role = Column(String, nullable=False, default="user")
     is_active = Column(Boolean, nullable=False, default=True)
     totp_secret = Column(String, nullable=True)
